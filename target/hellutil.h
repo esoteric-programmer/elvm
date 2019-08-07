@@ -35,7 +35,7 @@ typedef struct HellImmediate {
 } HellImmediate;
 
 typedef struct HellReference {
-	const char* reference; // look up final value using label tree
+	const char* label; // look up final value using label tree
 	int offset; // add this value to reference address (value may be negative)
 } HellReference;
 
@@ -67,12 +67,12 @@ typedef struct HellBlock {
 	HellImmediate* offset; // fixed offset?
 	HellCodeAtom* code;
 	HellDataAtom* data;
-	HellBlock* next;
+	struct HellBlock* next;
 } HellBlock;
 
 typedef struct StringList {
 	char* str;
-	StringList* next;
+	struct StringList* next;
 } StringList; // for free command
 
 typedef struct HellProgram {
