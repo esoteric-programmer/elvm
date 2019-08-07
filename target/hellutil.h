@@ -70,9 +70,15 @@ typedef struct HellBlock {
 	HellBlock* next;
 } HellBlock;
 
+typedef struct StringList {
+	char* str;
+	StringList* next;
+} StringList; // for free command
+
 typedef struct HellProgram {
 	HellBlock* blocks;
 	LabelTree* labels;
+	StringList* string_memory;
 } HellProgram;
 
 void make_hell_object(Module* module, HellProgram** hell);

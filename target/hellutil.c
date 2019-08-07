@@ -9,6 +9,10 @@ typedef struct LabelList {
 	LabelList* next;
 } LabelList;
 
+
+static StringList* strlist;
+static StringList* strlist_tail;
+
 static HellProgram* current_program;
 static HellBlock* current_block;
 static HellCodeAtom* current_code;
@@ -25,6 +29,7 @@ static void free_labeltree(LabelTree* tree);
 static void free_xlat(XlatCycle* cyc);
 static void	free_code(HellCodeAtom* code);
 static void	free_data(HellDataAtom* data);
+static void clear_string_memory();
 
 
 // call the following functions to generate HeLL program
@@ -36,6 +41,7 @@ static void emit_unused_cell();
 static void emit_finalize_block();
 static void emit_offset(int praefix_1t, const char* suffix); // assign fixed offset to next code/data atom
 static void emit_label(const char* name);
+static char* make_string(const char* format, ...);
 
 static int is_malbolge_cmd(unsigned char cmd) {
 	switch (cmd) {
@@ -315,19 +321,6 @@ static void emit_label(const char* name) {
 	}
 }
 
-// Generation of HeLL program from Module
-
-void make_hell_object(Module* module, HellProgram** hell) {
-	current_program = NULL;
-	current_block = NULL;
-	current_code = NULL;
-	current_data = NULL;
-	fixed_offset = NULL;
-	current_labels = NULL;
-	current_labels_tail = NULL;
-	// TODO: emit HeLL code for module
-}
-
 static void free_labeltree(LabelTree* tree) {
 	if (!tree) {
 		return;
@@ -374,6 +367,63 @@ static void	free_data(HellDataAtom* data) {
 	}
 }
 
+static char* make_string(const char* format, ...) {
+	if (!format || !format[0]) {
+		error("oops");
+	}
+	char* buf = (char*)malloc(100);
+	if (!buf) {
+		error("out of mem");
+	}
+	StringList* list = (StringList*)malloc(sizeof(StringList));
+	if (!list) {
+		free(buf);
+		error("out of mem");
+	}
+	list->next = NULL;
+	list->str = buf;
+	if (strlist_tail) {
+		strlist_tail->next = list;
+	}
+	strlist_tail = list;
+	va_list ap;
+	va_start(ap, format);
+	if (vsprintf(buf, format, ap)<0) {
+		free(buf);
+		error("oops");
+	}
+	va_end(ap);
+	return buf;
+}
+
+// Generation of HeLL program from Module
+
+void make_hell_object(Module* module, HellProgram** hell) {
+	current_program = NULL;
+	current_block = NULL;
+	current_code = NULL;
+	current_data = NULL;
+	fixed_offset = NULL;
+	current_labels = NULL;
+	current_labels_tail = NULL;
+	strlist = NULL;
+	strlist_tail = NULL;
+
+	// TODO: emit HeLL code for module
+	(*hell)->string_memory = strlist;
+}
+
+static void clear_string_memory(StringList* list) {
+	StringList* it = list;
+	while (it) {
+		StringList* tmp = it;
+		it = it->next;
+		// clear tmp
+		free_xlat(tmp->str);
+		free(tmp);
+	}
+}
+
 void free_hell_program(HellProgram** hell) {
 	if (!hell) {
 		return;
@@ -383,6 +433,7 @@ void free_hell_program(HellProgram** hell) {
 	}
 	// free all memory
 	free_labeltree((*hell)->labels);
+	clear_string_memory((*hell)->string_memory);
 	HellBlock* it = (*hell)->blocks;
 	while (it) {
 		HellBlock* tmp;
