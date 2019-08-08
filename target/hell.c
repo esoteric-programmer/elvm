@@ -28,7 +28,7 @@ static void print_hell_program(HellProgram* hell) {
   HellBlock* it = hell->blocks;
   while (it) {
     if (it->code && it->data) {
-      error("oops: hell.c, l. 31");
+      error("oops");
     }
     if (it->code) {
       print_hell_code(it->code);
@@ -74,7 +74,7 @@ static void print_malbolge_command(unsigned char cmd) {
       printf("Nop");
       break;
     default:
-      error("oops: hell.c, l. 77");
+      error("oops");
   }
 }
 
@@ -90,7 +90,7 @@ static void print_hell_code(HellCodeAtom* code) {
   HellCodeAtom* it = code;
   while (it) {
     if (!it->command) {
-      error("oops: hell.c, l. 93");
+      error("oops");
     }
     print_labels(it->referenced_by);
     XlatCycle* cyc = it->command;
@@ -132,20 +132,29 @@ static void print_hell_data(HellDataAtom* data) {
   while (it) {
     print_labels(it->referenced_by);
     if (it->value && it->reference) {
-      error("oops: hell.c, l. 135");
+      error("oops");
     }else if (!it->value && !it->reference) {
       printf("  ?\n");
     }else if (it->value) {
       if (!it->value->suffix) {
-        error("oops: hell.c, l. 140");
+        error("oops");
       }
       if (!it->value->suffix[0]) {
-        printf("%ct%c\n",'0'+it->value->praefix_1t,'0'+it->value->praefix_1t);
+        printf("  %ct%c\n",'0'+it->value->praefix_1t,'0'+it->value->praefix_1t);
       }else{
-        printf("%ct%s\n",'0'+it->value->praefix_1t,it->value->suffix);
+        printf("  %ct%s\n",'0'+it->value->praefix_1t,it->value->suffix);
       }
     }else if (it->reference) {
-      // TODO
+      printf("  ");
+      if (it->reference->offset == +1) {
+        printf("R_");
+      }else if (it->reference->offset < 0) {
+        printf("U_");
+        // TODO: MAKE U_ prefix!!!!!!!!
+      }else if (it->reference->offset != 0) {
+        error("oops");
+      }
+      printf("%s\n",it->reference->label);
     }
     it = it->next;
   }

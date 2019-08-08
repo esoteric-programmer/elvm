@@ -88,7 +88,7 @@ static void emit_xlat_cycle(unsigned char command, ...) {
     va_list ap;
     unsigned char c = denormalize(command);
     if (!is_malbolge_cmd(c)) {
-      error("oops: hellutil.c, l. 69 -- command %u / %c -> %u",command, command, c);
+      error("oops",command, command, c);
     }
     XlatCycle* cyc = (XlatCycle*)malloc(sizeof(XlatCycle));
     if (!cyc) {
@@ -123,7 +123,7 @@ static void emit_xlat_cycle(unsigned char command, ...) {
 
 static void emit_code_atom(XlatCycle* cyc) {
   if (!cyc) {
-    error("oops: hellutil.c, l. 103");
+    error("oops");
   }
   HellCodeAtom* atom = (HellCodeAtom*)malloc(sizeof(HellCodeAtom));
   if (!atom) {
@@ -142,7 +142,7 @@ static void emit_code_atom(XlatCycle* cyc) {
   current_labels_tail = NULL;
   if (current_code) {
     if (fixed_offset) {
-      error("oops: hellutil.c, l. 122");
+      error("oops");
     }
     current_code->next = atom;
     current_code = atom;
@@ -153,7 +153,7 @@ static void emit_code_atom(XlatCycle* cyc) {
 
 static void emit_immediate(int praefix_1t, const char* suffix) {
   if (!suffix) {
-    error("oops: hellutil.c, l. 133");
+    error("oops");
   }
   HellImmediate* hi = (HellImmediate*)malloc(sizeof(HellImmediate));
   if (!hi) {
@@ -167,7 +167,7 @@ static void emit_immediate(int praefix_1t, const char* suffix) {
 
 static void emit_label_reference(const char* label, int offset) {
   if (!label) {
-    error("oops: hellutil.c, l. 147");
+    error("oops");
   }
   HellReference* hr = (HellReference*)malloc(sizeof(HellReference));
   if (!hr) {
@@ -184,7 +184,7 @@ static void emit_unused_cell() {
 
 static void emit_data_atom(HellImmediate* hi, HellReference* hr) {
   if (hi && hr) {
-    error("oops: hellutil.c, l. 164");
+    error("oops");
   }
   HellDataAtom* atom = (HellDataAtom*)malloc(sizeof(HellDataAtom));
   if (!atom) {
@@ -204,7 +204,7 @@ static void emit_data_atom(HellImmediate* hi, HellReference* hr) {
   current_labels_tail = NULL;
   if (current_data) {
     if (fixed_offset) {
-      error("oops: hellutil.c, l. 184");
+      error("oops");
     }
     current_data->next = atom;
     current_data = atom;
@@ -221,13 +221,13 @@ static void emit_finalize_block() {
   current_code = NULL;
   current_data = NULL;
   if (fixed_offset) {
-    error("oops: hellutil.c, l. 201");
+    error("oops");
   }
 }
 
 static void emit_offset(int praefix_1t, const char* suffix) {
   if (!suffix) {
-    error("oops: hellutil.c, l. 207");
+    error("oops");
   }
   emit_finalize_block();
   HellImmediate* hi = (HellImmediate*)malloc(sizeof(HellImmediate));
@@ -245,7 +245,7 @@ static void emit_hell_block(HellCodeAtom* code, HellDataAtom* data) {
     error("out of mem");
   }
   if ((code == NULL && data == NULL) || (code != NULL && data != NULL)) {
-    error("oops: hellutil.c, l. 225");
+    error("oops");
   }
   hb->offset = fixed_offset;
   fixed_offset = NULL;
@@ -274,7 +274,7 @@ static void emit_hell_block(HellCodeAtom* code, HellDataAtom* data) {
       current_program->blocks = NULL;
     }
     if (current_program->blocks) {
-      error("oops: hellutil.c, l. 254");
+      error("oops");
     }
     current_program->blocks = hb;
     current_block = hb;
@@ -284,7 +284,7 @@ static void emit_hell_block(HellCodeAtom* code, HellDataAtom* data) {
 // insert label into current_labels list and LabelTree of of current_labels.
 static void emit_label(const char* name) {
   if (!name) {
-    error("oops: hellutil.c, l. 264");
+    error("oops");
   }
   LabelTree* label = (LabelTree*)malloc(sizeof(LabelTree));
   if (!label) {
@@ -309,7 +309,7 @@ static void emit_label(const char* name) {
     LabelTree* it = current_program->labels;
     while(1) {
       if (!it->label) {
-        error("oops: hellutil.c, l. 289");
+        error("oops");
       }
       int cmp = strncmp(name,it->label,101);
       if (cmp > 0){
@@ -327,7 +327,7 @@ static void emit_label(const char* name) {
           break;
         }
       }else{
-        error("oops: hellutil.c, l. 307");
+        error("oops");
       }
     }
   }
@@ -339,13 +339,13 @@ static void emit_label(const char* name) {
   list->next = NULL;
   if (current_labels_tail) {
     if (!current_labels) {
-      error("oops: hellutil.c, l. 319");
+      error("oops");
     }
     current_labels_tail->next = list;
     current_labels_tail = list;
   }else{
     if (current_labels) {
-      error("oops: hellutil.c, l. 325");
+      error("oops");
     }
     current_labels = list;
     current_labels_tail = list;
@@ -400,7 +400,7 @@ static void	free_data(HellDataAtom* data) {
 
 static char* make_string(const char* format, ...) {
   if (!format || !format[0]) {
-    error("oops: hellutil.c, l. 380");
+    error("oops");
   }
   char* buf = (char*)malloc(100);
   if (!buf) {
@@ -421,7 +421,7 @@ static char* make_string(const char* format, ...) {
   va_start(ap, format);
   if (vsprintf(buf, format, ap)<0) {
     free(buf);
-    error("oops: hellutil.c, l. 401");
+    error("oops");
   }
   va_end(ap);
   return buf;
@@ -477,7 +477,7 @@ void make_hell_object(Module* module, HellProgram** hell) {
 
   finalize_hell();
 
-
+  *hell = current_program;
   (*hell)->string_memory = strlist;
 }
 
@@ -782,7 +782,7 @@ static void emit_modify_var_footer(int var, ModifyMode access) {
         ret = "copy_aludst_to_var";
         break;
       default:
-        error("oops: hellutil.c, l. 762");
+        error("oops");
     }
     emit_label_reference(make_string("MODIFY_VAR_RETURN%u",i),0);
     emit_label_reference(make_string("%s_%s_ret%u", ret, HELL_VARIABLES[var].name, i),0);
@@ -1009,7 +1009,7 @@ static int hell_cmp_call(Inst* inst) {
     case JGE:
       return HELL_TEST_GE;
     default:
-      error("oops: hellutil.c, l. 989");
+      error("oops");
   }
 }
 
@@ -1173,7 +1173,7 @@ static void hell_emit_inst(Inst* inst) {
     break;
 
   default:
-    error("oops: hellutil.c, l. 1153");
+    error("oops");
   }
 }
 
@@ -1259,7 +1259,7 @@ static void emit_flags() {
 // set VAL_1222 to 1t22..22, read from var
 static void emit_read_0tvar(int var) {
   if (var == TMP || var == CARRY || var == VAL_1222) {
-    error("oops: hellutil.c, l. 1239");
+    error("oops");
   }
   num_local_labels++;
   emit_label(make_string("local_label_%u",num_local_labels));
@@ -1275,7 +1275,7 @@ static void emit_read_0tvar(int var) {
 // set VAL_1222 to 1t22..22, read from var, but with preceeding 1t11..
 static void emit_read_1tvar(int var) {
   if (var == TMP || var == CARRY || var == VAL_1222) {
-    error("oops: hellutil.c, l. 1255");
+    error("oops");
   }
   num_local_labels++;
   emit_label(make_string("local_label_%u",num_local_labels));
@@ -1291,7 +1291,7 @@ static void emit_read_1tvar(int var) {
 // set var AND tmp to C1, prepare for writing...
 static void emit_clear_var(int var) {
   if (var == TMP || var == VAL_1222) {
-    error("oops: hellutil.c, l. 1271");
+    error("oops");
   }
   emit_label_reference("ROT",0);
   emit_immediate(1,"1");
@@ -1311,7 +1311,7 @@ static void emit_clear_var(int var) {
 // write to var; tmp and var must be set to C1 before
 static void emit_write_var(int var) {
   if (var == TMP || var == CARRY || var == VAL_1222) {
-    error("oops: hellutil.c, l. 1291");
+    error("oops");
   }
   emit_opr_var(TMP);
   emit_opr_var(var);
@@ -2683,11 +2683,11 @@ static void init_state_hell(Data* data) {
       if (i==14){
         tmp++; // add 0t10000 offset (fixed cell init value)
       }
-      value[i] = tmp%3;
+      value[i] = '0' + tmp%3;
       tmp = tmp/3;
     } while((tmp || i>14) && i);
     if (!i) {
-      error("oops: hellutil.c, l. 2667");
+      error("oops");
     }
     emit_immediate(0,make_string("%s",value+i));
     emit_immediate(1,"01111");
