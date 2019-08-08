@@ -735,6 +735,7 @@ static void emit_rotwidth_loop_end();   // }
 static int hell_cmp_call(Inst* inst);
 static void hell_read_value(Value* val);
 static void emit_load_immediate(unsigned int immediate);
+static void emit_load_immediate_ter(HellImmediate* immediate);
 static void emit_load_expression(const char* expression, int preceeding_1t);
 
 // helper
@@ -946,7 +947,62 @@ static void emit_copy_aludst_to_var_base(int var) {
   emit_modify_var_footer(var, HELL_ALU_DST_TO_VAR);
 }
 
-/// TODO: adjust load_immediate, load_expression to new HeLL program data structure
+
+static void emit_load_immediate_ter(HellImmediate* immediate) {
+  if (immediate == 0) {
+    error("oops");
+  }else{
+    // build ternary values
+    char ternary1[21];
+    char ternary2[21];
+    char ternary3[21];
+    ternary1[20] = 0;
+    ternary2[20] = 0;
+    ternary3[20] = 0;
+    int i = 20;
+    int j = 0;
+    while (immediate->suffix[j]) {
+      j++;
+    }
+    if (j>i) {
+      error("oops");
+    }
+    int need_three_opr = immediate->praefix_1t;
+    while (i) {
+      i--;
+      int modulus;
+      if (j) {
+        j--;
+        modulus = immediate->suffix[j] - '0';
+      }else{
+        modulus = immediate->praefix_1t;
+      }
+      int odd = modulus%2;
+      if (odd) {
+        need_three_opr = 1;
+      }
+      ternary3[i] = '0' + modulus;
+      ternary2[i] = '1' - odd;
+      ternary1[i] = '0' + 2*odd;
+    }
+    emit_label_reference("ROT",0);
+    emit_immediate(1-immediate->praefix_1t,"11111111111111111111");
+    emit_label_reference("ROT",+1);
+    if (need_three_opr) {
+      emit_label_reference("OPR",0);
+      emit_immediate(immediate->praefix_1t,make_string("%s",ternary1));
+      emit_label_reference("OPR",+1);
+      emit_label_reference("OPR",0);
+      emit_immediate(1-immediate->praefix_1t,make_string("%s",ternary2));
+      emit_label_reference("OPR",+1);
+    }
+    emit_label_reference("OPR",0);
+    emit_immediate(immediate->praefix_1t,make_string("%s",ternary3));
+    emit_label_reference("OPR",+1);
+  }
+}
+
+
 
 static void emit_load_immediate(unsigned int immediate) {
   if (immediate == 0) {
@@ -1405,7 +1461,8 @@ static void emit_getc_base() {
   // read UINT_MAX = 16777215 into ALU_SRC (which is much larger than largest Unicode code point,
   // but much smaller than modified special Malbolge Unshackled encoding 0t22..21 or 0t22..22
   emit_clear_var(ALU_SRC);
-  emit_load_immediate(UINT_MAX);
+  HellImmediate UINT_MAX_TER = {0, "1011120101000100"};
+  emit_load_immediate_ter(&UINT_MAX_TER);
   emit_write_var(ALU_SRC);
 
   // test if alu_dst is less than alu_src
@@ -1504,7 +1561,8 @@ static void emit_sub_uint24_base() {
 
   // load UINT_MAX+1 into ALU_SRC
   emit_clear_var(ALU_SRC);
-  emit_load_expression(UINT_MAX_STR "+1", 0);
+  HellImmediate UINT_MAX_STR_PLUS_ONE = {0, "1011120101000101"};
+  emit_load_immediate_ter(&UINT_MAX_STR_PLUS_ONE);
   emit_write_var(ALU_SRC);
 
   // add UINT_MAX+1 to ALU_DST
@@ -1520,7 +1578,7 @@ static void emit_sub_uint24_base() {
 
   // compute result modulo (UINT_MAX+1)
   emit_clear_var(ALU_SRC);
-  emit_load_expression(UINT_MAX_STR "+1", 0);
+  emit_load_immediate_ter(&UINT_MAX_STR_PLUS_ONE);
   emit_write_var(ALU_SRC);
   emit_call(HELL_MODULO);
 
@@ -1542,7 +1600,8 @@ static void emit_add_uint24_base() {
 
   // read (UINT_MAX+1) into ALU_SRC
   emit_clear_var(ALU_SRC);
-  emit_load_expression(UINT_MAX_STR "+1", 0);
+  HellImmediate UINT_MAX_STR_PLUS_ONE = {0, "1011120101000101"};
+  emit_load_immediate_ter(&UINT_MAX_STR_PLUS_ONE);
   emit_write_var(ALU_SRC);
 
   // now modulo can be applied
@@ -1790,7 +1849,8 @@ static void emit_compute_memptr_base() {
   emit_label_reference("MOVD",+1);
   // set ALU_DST to MEMORY_0-2
   emit_clear_var(ALU_DST);
-  emit_load_expression("MEMORY_0-2", 1);
+  HellImmediate MEMORy_0_MINUS_TWO = {1,"022212"};
+  emit_load_immediate_ter(&MEMORy_0_MINUS_TWO);
   emit_write_var(ALU_DST);
 
   // save ALU_SRC to TMP2
@@ -2307,7 +2367,7 @@ static void emit_rotwidth_loop_base() {
   emit_label_reference("skip_inner_loop",0);
   emit_label_reference("SKIP_rw_FLAG",+1);
 
-  /// TODO: IF 20 iterations have been executed already, skip to end_of_inner_loop_body
+  /// IF 20 iterations have been executed already, skip to end_of_inner_loop_body
   for (int i=1;i<=num_rotwidth_loop_calls;i++){
     emit_label_reference(make_string("ROTWIDTH_LOOP%u",i),0);
     emit_label_reference(make_string("rotwidth_loop_inner%u",i),0);

@@ -1,6 +1,8 @@
 #include <target/util.h>
 #include <target/hellutil.h>
 
+// TODO: print fixed OFFSETs (HeLL syntax: "@...")
+
 static int last_section_type = 0;
 
 static void print_labels(LabelList* labels);
@@ -139,12 +141,12 @@ static void print_hell_data(HellDataAtom* data, LabelTree* tree) {
   while (it) {
     print_labels(it->labels);
     if (it->value && it->reference) {
-      error("oops1");
+      error("oops");
     }else if (!it->value && !it->reference) {
       printf("  ?\n");
     }else if (it->value) {
       if (!it->value->suffix) {
-        error("oops2");
+        error("oops");
       }
       if (!it->value->suffix[0]) {
         printf("  %ct%c\n",'0'+it->value->praefix_1t,'0'+it->value->praefix_1t);
@@ -155,7 +157,7 @@ static void print_hell_data(HellDataAtom* data, LabelTree* tree) {
       printf("  ");
       LabelTree* dest = find_label(tree, it->reference->label);
       if (!dest) {
-        error("oops3");
+        error("oops");
       }
       if (dest->data && !dest->code) {
         printf("%s",it->reference->label);
@@ -175,28 +177,28 @@ static void print_hell_data(HellDataAtom* data, LabelTree* tree) {
             dest_u = dest_u->next;
           }
           if (!dest_u) {
-            error("oops4");
+            error("oops");
           }
           if (dest_u->labels) {
             if (dest_u->labels->item) {
               if (dest_u->labels->item->label) {
                 printf("%s\n",dest_u->labels->item->label);
               }else{
-                error("oops5");
+                error("oops");
               }
             }else{
-              error("oops6");
+              error("oops");
             }
           }else{
-            error("oops7");
+            error("oops");
           }
         }else if (it->reference->offset == 0) {
           printf("%s\n",it->reference->label);
         }else{
-           error("oops8");
+           error("oops");
         }
       }else{
-        error("oops9");
+        error("oops");
       }
     }
     it = it->next;
