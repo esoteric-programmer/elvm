@@ -986,8 +986,19 @@ static void emit_load_immediate_ter(HellImmediate* immediate) {
       ternary1[i] = '0' + 2*odd;
     }
     emit_label_reference("ROT",0);
-    emit_immediate(1-immediate->praefix_1t,"11111111111111111111");
+    emit_immediate(1,"1");
     emit_label_reference("ROT",+1);
+    if (immediate->praefix_1t) {
+      emit_label_reference("OPR",0);
+      emit_immediate(0,"22222222222222222222");
+      emit_label_reference("OPR",+1);
+      emit_label_reference("OPR",0);
+      emit_immediate(1,"00000000000000000000");
+      emit_label_reference("OPR",+1);
+      emit_label_reference("OPR",0);
+      emit_immediate(0,"11111111111111111111");
+      emit_label_reference("OPR",+1);
+    }
     if (need_three_opr) {
       emit_label_reference("OPR",0);
       emit_immediate(immediate->praefix_1t,make_string("%s",ternary1));
@@ -1100,16 +1111,15 @@ static void hell_read_value(Value* val) {
     }
 }
 
+
 static void hell_emit_inst(Inst* inst) {
   switch (inst->op) {
     case MOV:
-
     hell_read_value(&inst->src);
     emit_modify_var(inst->dst.reg, HELL_VAR_WRITE);
     break;
 
   case ADD:
-
     // copy to ALU
     emit_modify_var(inst->dst.reg, HELL_VAR_TO_ALU_DST);
     hell_read_value(&inst->src);
@@ -1123,7 +1133,6 @@ static void hell_emit_inst(Inst* inst) {
     break;
 
   case SUB:
-
     // copy to ALU
     emit_modify_var(inst->dst.reg, HELL_VAR_TO_ALU_DST);
     hell_read_value(&inst->src);
@@ -1159,7 +1168,6 @@ static void hell_emit_inst(Inst* inst) {
     break;
 
   case PUTC:
-
     // copy to ALU (NOTE: from inst->src to ALU_DST)
     hell_read_value(&inst->src);
     emit_modify_var(ALU_DST, HELL_VAR_WRITE);
@@ -1169,7 +1177,6 @@ static void hell_emit_inst(Inst* inst) {
     break;
 
   case GETC:
-
     // compute
     emit_call(HELL_GETC);
 
