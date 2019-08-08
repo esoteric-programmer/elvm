@@ -12,7 +12,12 @@
 #define MALBOLGE_COMMAND_HALT 81
 #define MALBOLGE_COMMAND_NOP 68
 
-struct HellReferencedBy;
+struct LabelTree;
+
+typedef struct LabelList {
+	struct LabelTree* item;
+	struct LabelList* next;
+} LabelList;
 
 // .CODE section
 
@@ -23,7 +28,7 @@ typedef struct XlatCycle {
 
 typedef struct HellCodeAtom {
 	XlatCycle* command;
-	struct HellReferencedBy* referenced_by;
+	LabelList* labels;
 	struct HellCodeAtom* next;
 } HellCodeAtom;
 
@@ -42,7 +47,7 @@ typedef struct HellReference {
 typedef struct HellDataAtom {
 	HellImmediate* value;
 	HellReference* reference;
-	struct HellReferencedBy* referenced_by;
+	LabelList* labels;
 	struct HellDataAtom* next;
 } HellDataAtom;
 
@@ -57,6 +62,7 @@ typedef struct LabelTree {
 	HellCodeAtom* code;
 	HellDataAtom* data;
 	const char* label;
+	struct HellReferencedBy* referenced_by;
 	struct LabelTree* left;
 	struct LabelTree* right;
 } LabelTree;
@@ -82,6 +88,7 @@ typedef struct HellProgram {
 } HellProgram;
 
 void make_hell_object(Module* module, HellProgram** hell);
+LabelTree* find_label(LabelTree* tree, const char* name);
 void free_hell_program(HellProgram** hell);
 
 #endif

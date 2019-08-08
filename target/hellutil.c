@@ -8,12 +8,6 @@ void free(void*);
 
 // Helper functions for HeLL program generation
 
-typedef struct LabelList {
-  LabelTree* item;
-  struct LabelList* next;
-} LabelList;
-
-
 static StringList* strlist;
 static StringList* strlist_tail;
 
@@ -130,15 +124,14 @@ static void emit_code_atom(XlatCycle* cyc) {
     error("out of mem");
   }
   atom->command = cyc;
-  atom->referenced_by = NULL;
   atom->next = NULL;
   LabelList* it = current_labels;
   while (it) {
     it->item->code = atom;
     it = it->next;
-    free(current_labels);
-    current_labels = it;
   }
+  atom->labels = current_labels;
+  current_labels = NULL;
   current_labels_tail = NULL;
   if (current_code) {
     if (fixed_offset) {
@@ -192,15 +185,14 @@ static void emit_data_atom(HellImmediate* hi, HellReference* hr) {
   }
   atom->value = hi;
   atom->reference = hr;
-  atom->referenced_by = NULL;
   atom->next = NULL;
   LabelList* it = current_labels;
   while (it) {
     it->item->data = atom;
     it = it->next;
-    free(current_labels);
-    current_labels = it;
   }
+  atom->labels = current_labels;
+  current_labels = NULL;
   current_labels_tail = NULL;
   if (current_data) {
     if (fixed_offset) {
@@ -293,6 +285,7 @@ static void emit_label(const char* name) {
   label->code = NULL;
   label->data = NULL;
   label->label = name;
+  label->referenced_by = NULL;
   label->left = NULL;
   label->right = NULL;
   if (!current_program) {
@@ -437,6 +430,9 @@ static void finalize_hell();
 static void hell_emit_gen_1222();
 
 void make_hell_object(Module* module, HellProgram** hell) {
+  if (!hell) {
+    error("oops");
+  }
   current_program = NULL;
   current_block = NULL;
   current_code = NULL;
@@ -466,7 +462,7 @@ void make_hell_object(Module* module, HellProgram** hell) {
       emit_unused_cell();
       emit_unused_cell();
       emit_unused_cell();
-      emit_label(make_string("direct_jmp_label_pc%u:",current_pc_value));
+      emit_label(make_string("direct_jmp_label_pc%u",current_pc_value));
       emit_label_reference("MOVD",+1);
     }
     hell_emit_inst(inst);
@@ -478,7 +474,30 @@ void make_hell_object(Module* module, HellProgram** hell) {
   finalize_hell();
 
   *hell = current_program;
+  if (!*hell) {
+    error("oops");
+  }
   (*hell)->string_memory = strlist;
+}
+
+LabelTree* find_label(LabelTree* tree, const char* name) {
+  if (!name) {
+    return NULL;
+  }
+  if (!name[0]) {
+    return NULL;
+  }
+  if (!tree) {
+    return NULL;
+  }
+  int cmp = strncmp(name,tree->label,101);
+  if (cmp > 0){
+    return find_label(tree->left, name);
+  }else if (cmp < 0){
+    return find_label(tree->right, name);
+  }else{
+    return tree;
+  }
 }
 
 static void clear_string_memory(StringList* list) {
@@ -492,6 +511,7 @@ static void clear_string_memory(StringList* list) {
   }
 }
 
+//// TODO: clear referenced_by-list of LabelTree AND labels-list of Code/Data-Atoms
 void free_hell_program(HellProgram** hell) {
   if (!hell) {
     return;
@@ -926,6 +946,7 @@ static void emit_copy_aludst_to_var_base(int var) {
   emit_modify_var_footer(var, HELL_ALU_DST_TO_VAR);
 }
 
+/// TODO: adjust load_immediate, load_expression to new HeLL program data structure
 
 static void emit_load_immediate(unsigned int immediate) {
   if (immediate == 0) {
@@ -2452,11 +2473,11 @@ static void emit_hell_variables_base() {
     emit_label_reference(make_string("%s_IS_C1",HELL_VARIABLES[i].name),+1);
     emit_label_reference("NOP",-2); // U_NOP return_from_`HELL_VARIABLES[i].name`
 
-    /// emit_label(make_string("continue_%s",HELL_VARIABLES[i].name));
+    emit_label(make_string("continue_%s",HELL_VARIABLES[i].name)); /* U_-prefix destination */
     emit_label_reference("ROT",+1);
     emit_label_reference("OPR",+1);
 
-    // emit_label(make_string("return_from_%s",HELL_VARIABLES[i].name));
+    emit_label(make_string("return_from_%s",HELL_VARIABLES[i].name)); /* U_-prefix destination */
     emit_label_reference("MOVD",+1);
     for (int j=1;j<=HELL_VARIABLES[i].counter;j++) {
       emit_label_reference(make_string("VAR_RETURN%u",j),0);

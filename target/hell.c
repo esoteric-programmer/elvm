@@ -3,15 +3,18 @@
 
 static int last_section_type = 0;
 
-static void print_labels(HellReferencedBy* ref);
+static void print_labels(LabelList* labels);
 static void print_malbolge_command(unsigned char cmd);
 static void print_hell_code(HellCodeAtom* code);
-static void print_hell_data(HellDataAtom* data);
+static void print_hell_data(HellDataAtom* data, LabelTree* tree);
 static void print_hell_program(HellProgram* hell);
 
 void target_hell(Module* module) {
   HellProgram* hp = NULL;
   make_hell_object(module, &hp);
+  if (!hp) {
+    error("oops");
+  }
   print_hell_program(hp);
   free_hell_program(&hp);
 }
@@ -21,9 +24,6 @@ static void print_hell_program(HellProgram* hell) {
   if (!hell) {
     return;
   }
-
-  // TODO: fill referenced_by list
-
   last_section_type = 0;
   HellBlock* it = hell->blocks;
   while (it) {
@@ -34,18 +34,25 @@ static void print_hell_program(HellProgram* hell) {
       print_hell_code(it->code);
     }
     if (it->data) {
-      print_hell_data(it->data);
+      print_hell_data(it->data, hell->labels);
     }
     it = it->next;
   }
 }
 
-static void print_labels(HellReferencedBy* ref) {
-	// TODO
-	if (ref) {
-	  // TODO
-	}
+
+static void print_labels(LabelList* labels) {
+  LabelList* it = labels;
+  while (it) {
+    if (it->item) {
+      if (it->item->label) {
+        printf("%s:\n",it->item->label);
+      }
+    }
+    it = it->next;
+  }
 }
+
 
 static void print_malbolge_command(unsigned char cmd) {
   switch (cmd) {
@@ -92,7 +99,7 @@ static void print_hell_code(HellCodeAtom* code) {
     if (!it->command) {
       error("oops");
     }
-    print_labels(it->referenced_by);
+    print_labels(it->labels);
     XlatCycle* cyc = it->command;
     int is_rnop = (cyc->command == MALBOLGE_COMMAND_NOP && cyc->next != NULL)?1:0;
     while (cyc->next && is_rnop) {
@@ -120,7 +127,7 @@ static void print_hell_code(HellCodeAtom* code) {
   printf("\n");
 }
 
-static void print_hell_data(HellDataAtom* data) {
+static void print_hell_data(HellDataAtom* data, LabelTree* tree) {
   if (!data) {
     return;
   }
@@ -130,14 +137,14 @@ static void print_hell_data(HellDataAtom* data) {
   last_section_type = 2;
   HellDataAtom* it = data;
   while (it) {
-    print_labels(it->referenced_by);
+    print_labels(it->labels);
     if (it->value && it->reference) {
-      error("oops");
+      error("oops1");
     }else if (!it->value && !it->reference) {
       printf("  ?\n");
     }else if (it->value) {
       if (!it->value->suffix) {
-        error("oops");
+        error("oops2");
       }
       if (!it->value->suffix[0]) {
         printf("  %ct%c\n",'0'+it->value->praefix_1t,'0'+it->value->praefix_1t);
@@ -146,15 +153,51 @@ static void print_hell_data(HellDataAtom* data) {
       }
     }else if (it->reference) {
       printf("  ");
-      if (it->reference->offset == +1) {
-        printf("R_");
-      }else if (it->reference->offset < 0) {
-        printf("U_");
-        // TODO: MAKE U_ prefix!!!!!!!!
-      }else if (it->reference->offset != 0) {
-        error("oops");
+      LabelTree* dest = find_label(tree, it->reference->label);
+      if (!dest) {
+        error("oops3");
       }
-      printf("%s\n",it->reference->label);
+      if (dest->data && !dest->code) {
+        printf("%s",it->reference->label);
+        if (it->reference->offset > 0) {
+          printf(" + %u",it->reference->offset);
+        }else if (it->reference->offset < 0) {
+          printf(" - %u",-it->reference->offset);
+        }
+        printf("\n");
+      }else if (dest->code && !dest->data) {
+        if (it->reference->offset == +1) {
+          printf("R_%s\n",it->reference->label);
+        }else if (it->reference->offset < 0) {
+          printf("U_%s ",it->reference->label);
+          HellDataAtom* dest_u = it->next;
+          for (int i=0; i>it->reference->offset && dest_u; i--) {
+            dest_u = dest_u->next;
+          }
+          if (!dest_u) {
+            error("oops4");
+          }
+          if (dest_u->labels) {
+            if (dest_u->labels->item) {
+              if (dest_u->labels->item->label) {
+                printf("%s\n",dest_u->labels->item->label);
+              }else{
+                error("oops5");
+              }
+            }else{
+              error("oops6");
+            }
+          }else{
+            error("oops7");
+          }
+        }else if (it->reference->offset == 0) {
+          printf("%s\n",it->reference->label);
+        }else{
+           error("oops8");
+        }
+      }else{
+        error("oops9");
+      }
     }
     it = it->next;
   }
