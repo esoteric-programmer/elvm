@@ -105,6 +105,7 @@ ELC_SRCS := \
 	fs.c \
 	go.c \
 	hell.c \
+	hellutil.c \
 	hs.c \
 	i.c \
 	java.c \
