@@ -176,19 +176,23 @@ static void print_hell_data(HellDataAtom* data, HellImmediate* offset, LabelTree
       }
       if (dest->data && !dest->code) {
         printf("%s",it->reference->label);
-        if (it->reference->offset > 0) {
+        // if (it->reference->offset > 0) -- hack for 8cc
+        if (it->reference->offset > 0 && (unsigned int)it->reference->offset < ((unsigned int)-1)/2) {
           printf(" + %u",it->reference->offset);
-        }else if (it->reference->offset < 0) {
+        // else if (it->reference->offset < 0) -- hack for 8cc
+        }else if ((unsigned int)it->reference->offset >= ((unsigned int)-1)/2) {
           printf(" - %u",-it->reference->offset);
         }
         printf("\n");
       }else if (dest->code && !dest->data) {
+        // if (it->reference->offset > 0) -- hack for 8cc
         if (it->reference->offset == +1) {
           printf("R_%s\n",it->reference->label);
-        }else if (it->reference->offset < 0) {
+        // else if (it->reference->offset < 0) -- hack for 8cc
+        }else if ((unsigned int)it->reference->offset >= ((unsigned int)-1)/2) {
           printf("U_%s ",it->reference->label);
           HellDataAtom* dest_u = it->next;
-          for (int i=0; i>it->reference->offset && dest_u; i--) {
+          for (int i=0; i<-it->reference->offset && dest_u; i++) {
             dest_u = dest_u->next;
           }
           if (!dest_u) {

@@ -305,14 +305,16 @@ static void emit_label(const char* name) {
         error("oops");
       }
       int cmp = strncmp(name,it->label,101);
-      if (cmp > 0){
+      // else if (cmp > 0) -- hack for 8cc
+      if (cmp > 0 && (unsigned int)cmp < ((unsigned int)-1)/2){
         if (it->left) {
           it = it->left;
         }else{
           it->left = label;
           break;
         }
-      }else if (cmp < 0){
+      // else if (cmp < 0) -- hack for 8cc
+      }else if ((unsigned int)cmp >= ((unsigned int)-1)/2){
         if (it->right) {
           it = it->right;
         }else{
@@ -491,9 +493,11 @@ LabelTree* find_label(LabelTree* tree, const char* name) {
     return NULL;
   }
   int cmp = strncmp(name,tree->label,101);
-  if (cmp > 0){
+  // if (cmp > 0) -- hack for 8cc
+  if (cmp > 0 && (unsigned int)cmp < ((unsigned int)-1)/2){
     return find_label(tree->left, name);
-  }else if (cmp < 0){
+  // if (cmp < 0) -- hack for 8cc
+  }else if ((unsigned int)cmp >= ((unsigned int)-1)/2){
     return find_label(tree->right, name);
   }else{
     return tree;
@@ -1331,8 +1335,8 @@ static void emit_flags() {
   for (int j=0; HELL_FLAGS[j].name[0]; j++) {
     for (int i=1; i<=HELL_FLAGS[j].counter; i++) {
       emit_label(make_string("%s%u",HELL_FLAGS[j].name,i));
-      emit_xlat_cycle('o','j');
-      emit_xlat_cycle('i');
+      emit_xlat_cycle('o','j',0);
+      emit_xlat_cycle('i',0);
       emit_finalize_block();
     }
   }
@@ -2481,24 +2485,24 @@ static void emit_rotwidth_loop_base() {
   
   for (int i=1;i<=num_rotwidth_loop_calls;i++){
     emit_label(make_string("ROTWIDTH_LOOP%u",i));
-    emit_xlat_cycle('o','j');
-    emit_xlat_cycle('i');
+    emit_xlat_cycle('o','j',0);
+    emit_xlat_cycle('i',0);
     emit_finalize_block();
   }
 
   emit_label("LOOP4_rw");
-  emit_xlat_cycle('o','o','o','j');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('o','o','o','j',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("LOOP5_rw");
-  emit_xlat_cycle('o','o','o','o','j');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('o','o','o','o','j',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("SKIP_rw_FLAG");
-  emit_xlat_cycle('o','j');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('o','j',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_finalize_block();
@@ -2567,14 +2571,14 @@ static void emit_hell_variables_base() {
       continue;
     }
     emit_label(make_string("%s_IS_C1",HELL_VARIABLES[i].name));
-    emit_xlat_cycle('o','j');
-    emit_xlat_cycle('i');
+    emit_xlat_cycle('o','j',0);
+    emit_xlat_cycle('i',0);
     emit_finalize_block();
   }
   for (int j=1;j<=max_cnt;j++) {
     emit_label(make_string("VAR_RETURN%u",j));
-    emit_xlat_cycle('o','j');
-    emit_xlat_cycle('i');
+    emit_xlat_cycle('o','j',0);
+    emit_xlat_cycle('i',0);
     emit_finalize_block();
   }
 }
@@ -2636,76 +2640,76 @@ static void finalize_hell() {
   emit_finalize_block();
 
   emit_label("MOVD");
-  emit_xlat_cycle('j','o');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('j','o',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("ROT");
-  emit_xlat_cycle('*','o');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('*','o',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("OPR");
-  emit_xlat_cycle('p','o');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('p','o',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("IN");
-  emit_xlat_cycle('/','o');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('/','o',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("OUT");
-  emit_xlat_cycle('<','o');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('<','o',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("NOP");
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("HALT");
-  emit_xlat_cycle('v');
+  emit_xlat_cycle('v',0);
   emit_finalize_block();
 
   emit_label("MOVDMOVD");
-  emit_xlat_cycle('j','o');
-  emit_xlat_cycle('o','o');
-  emit_xlat_cycle('o','o');
-  emit_xlat_cycle('o','o');
-  emit_xlat_cycle('j','o');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('j','o',0);
+  emit_xlat_cycle('o','o',0);
+  emit_xlat_cycle('o','o',0);
+  emit_xlat_cycle('o','o',0);
+  emit_xlat_cycle('j','o',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("LOOP2");
-  emit_xlat_cycle('j','o');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('j','o',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("LOOP4");
-  emit_xlat_cycle('o','o','o','j');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('o','o','o','j',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("LOOP2_2");
-  emit_xlat_cycle('o','j');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('o','j',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   emit_label("MOVDOPRMOVD");
-  emit_xlat_cycle('j','o','o','o','o','o','o','o','o');
-  emit_xlat_cycle('o','o');
-  emit_xlat_cycle('o','o');
-  emit_xlat_cycle('p','o','o','o','o','*','o','o','o');
+  emit_xlat_cycle('j','o','o','o','o','o','o','o','o',0);
+  emit_xlat_cycle('o','o',0);
+  emit_xlat_cycle('o','o',0);
+  emit_xlat_cycle('p','o','o','o','o','*','o','o','o',0);
   emit_label("PARTIAL_MOVDOPRMOVD");
-  emit_xlat_cycle('j','o','o','o','o','o','o','o','o');
-  emit_xlat_cycle('i');
+  emit_xlat_cycle('j','o','o','o','o','o','o','o','o',0);
+  emit_xlat_cycle('i',0);
   emit_finalize_block();
 
   for (int i=1; i<=num_flags; i++) {
     emit_label(make_string("FLAG%u",i));
-    emit_xlat_cycle('o','j');
-    emit_xlat_cycle('i');
+    emit_xlat_cycle('o','j',0);
+    emit_xlat_cycle('i',0);
     emit_finalize_block();
   }
   
@@ -2719,8 +2723,8 @@ static void finalize_hell() {
   }
   for (int i=1; i<=max_var; i++) {
     emit_label(make_string("MODIFY_VAR_RETURN%u",i));
-    emit_xlat_cycle('o','j');
-    emit_xlat_cycle('i');
+    emit_xlat_cycle('o','j',0);
+    emit_xlat_cycle('i',0);
     emit_finalize_block();
   }
   emit_flags();
