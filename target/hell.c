@@ -1,14 +1,13 @@
 #include <target/util.h>
 #include <target/hellutil.h>
 
-// TODO: print fixed OFFSETs (HeLL syntax: "@...")
-
 static int last_section_type = 0;
 
 static void print_labels(LabelList* labels);
+static void print_offset(HellImmediate* offset);
 static void print_malbolge_command(unsigned char cmd);
-static void print_hell_code(HellCodeAtom* code);
-static void print_hell_data(HellDataAtom* data, LabelTree* tree);
+static void print_hell_code(HellCodeAtom* code, HellImmediate* offset);
+static void print_hell_data(HellDataAtom* data, HellImmediate* offset, LabelTree* tree);
 static void print_hell_program(HellProgram* hell);
 
 void target_hell(Module* module) {
@@ -33,15 +32,29 @@ static void print_hell_program(HellProgram* hell) {
       error("oops");
     }
     if (it->code) {
-      print_hell_code(it->code);
+      print_hell_code(it->code, it->offset);
     }
     if (it->data) {
-      print_hell_data(it->data, hell->labels);
+      print_hell_data(it->data, it->offset, hell->labels);
     }
     it = it->next;
   }
 }
 
+static void print_offset(HellImmediate* offset) {
+  if (offset) {
+    if (!offset->suffix) {
+      error("oops");
+    }
+    printf("@%ct",offset->praefix_1t+'0');
+    if (offset->suffix[0]) {
+      printf("%s",offset->suffix);
+    }else{
+      printf("%c",offset->praefix_1t+'0');
+    }
+    printf("\n");
+  }
+}
 
 static void print_labels(LabelList* labels) {
   LabelList* it = labels;
@@ -88,7 +101,7 @@ static void print_malbolge_command(unsigned char cmd) {
 }
 
 
-static void print_hell_code(HellCodeAtom* code) {
+static void print_hell_code(HellCodeAtom* code, HellImmediate* offset) {
   if (!code) {
     return;
   }
@@ -96,6 +109,7 @@ static void print_hell_code(HellCodeAtom* code) {
     printf(".CODE\n");
   }
   last_section_type = 1;
+  print_offset(offset);
   HellCodeAtom* it = code;
   while (it) {
     if (!it->command) {
@@ -129,7 +143,7 @@ static void print_hell_code(HellCodeAtom* code) {
   printf("\n");
 }
 
-static void print_hell_data(HellDataAtom* data, LabelTree* tree) {
+static void print_hell_data(HellDataAtom* data, HellImmediate* offset, LabelTree* tree) {
   if (!data) {
     return;
   }
@@ -137,6 +151,7 @@ static void print_hell_data(HellDataAtom* data, LabelTree* tree) {
     printf(".DATA\n");
   }
   last_section_type = 2;
+  print_offset(offset);
   HellDataAtom* it = data;
   while (it) {
     print_labels(it->labels);

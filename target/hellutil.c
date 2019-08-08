@@ -2783,17 +2783,13 @@ static void init_state_hell(Data* data) {
     emit_offset(1,"022222");
     emit_label("MEMORY_0");
     emit_immediate(0,"10000");
+    emit_immediate(1,"01111");
     emit_finalize_block();
   }
-
 
   emit_label("unused");
   // force rotation width to be large enough when 1t22...22-constant is generated at program start
   emit_immediate(0,"10000000000000000000");
   emit_finalize_block();
-
-
-  if (data) {
-  }
 }
 
