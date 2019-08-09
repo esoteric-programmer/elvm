@@ -256,7 +256,16 @@ This backend won't be tested by default because Malbolge Unshackled is extremely
 
     $ HELL=1 make hell
 
-to run them. Note you may need to adjust tools/runhell.sh.
+to run them. Note you may need to adjust tools/runhell.sh. See also the section about Malbolge Unshackled.
+
+### Malbolge Unshackled
+
+This backend was contributed by [@esoteric-programmer](https://github.com/esoteric-programmer/).
+It won't be tested by default because Malbolge Unshackled is extremely slow. Use
+
+    $ MU=1 make mu
+
+to run them. 
 
 This backend does not support all 8-bit characters on I/O, because I/O of Malbolge Unshackled
 uses Unicode codepoints instead of single bytes in getc/putc calls.
@@ -266,8 +275,6 @@ The backend reverts/converts newlines from input to Linux encoding and
 applies modulo 256 operations to all input and output,
 but it cannot compensate the issues this way.
 You should limit I/O to ASCII characters in order to avoid unexpected behaviour or crashes.
-
-This backend may be replaced by a Malbolge Unshackled backend in the future.
 
 ### TensorFlow
 
