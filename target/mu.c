@@ -1,5 +1,8 @@
+#include <string.h>
 #include <target/util.h>
 #include <target/hellutil.h>
+
+void* malloc(size_t);
 
 // helper functions
 static void decrement_immediate(HellImmediate* imm);
@@ -8,7 +11,11 @@ static void insert_preceeding_rnop(HellBlock* hb);
 // process HeLL program
 static void compute_referenced_by(HellProgram* hp); // go through data section, resolve references and add to referenced_by list
 static void add_rnops_for_u_prefix(HellProgram* hp); // go through code section. if a label is referenced U_-prefixed, add enough RNop instructions before label
-
+static void sort_offsets(HellProgram* hp); // order: begin with fixed offsets (ascending), afterwards put all variable offsets
+static void assign_memory_cells(HellProgram* hp); // assign ascending offsets, starting behind greatest fixed offset value
+static void convert_to_immediates(HellProgram* hp); // convert references and xlat cycles into fixed HellImmediate values
+static void emit_initialization_code(HellProgram* hp);
+static void emit_entry_point_code(HellProgram* hp);
 
 // generate Malbolge Unshackled code
 void target_mu(Module* module) {
@@ -19,9 +26,9 @@ void target_mu(Module* module) {
   }
   compute_referenced_by(hp);
   add_rnops_for_u_prefix(hp);
-  sort_offsets(hp); // order: begin with fixed offsets (ascending), afterwards put all variable offsets
-  fix_variable_offsets(hp); // assign ascending offsets, starting behind greatest fixed offset value
-  convert_to_immediates(hp); // convert references and xlat cycles into fixed HellImmediate values
+  sort_offsets(hp);
+  assign_memory_cells(hp);
+  convert_to_immediates(hp);
   emit_initialization_code(hp);
   emit_entry_point_code(hp);
   free_hell_program(&hp);
@@ -48,8 +55,28 @@ static void compute_referenced_by(HellProgram* hp) {
 }
 
 static void decrement_immediate(HellImmediate* imm) {
-  // TODO
-  error("not implemented yet");
+  // TODO: FIX memory leaks!!
+  // old suffix must be freed, but it is not clear
+  // whether the old suffix is located in heap
+  if (!imm) {
+    return;
+  }
+  int len = strlen(imm->suffix);
+  char* new_suffix = (char*)malloc(len+1);
+  memcpy(new_suffix+1,imm->suffix,len);
+  new_suffix[0] = '0' + imm->praefix_1t;
+  int dec = 1;
+  len++;
+  while (dec && len > 0) {
+    len--;
+    new_suffix[len]--;
+    if (new_suffix[len]<'0') {
+      new_suffix[len] = '2';
+    }
+  }
+  while (new_suffix[0] == imm->praefix_1t + '0')
+    new_suffix++;
+  imm->suffix = new_suffix;
 }
 
 static void insert_preceeding_rnop(HellBlock* hb) {
@@ -78,33 +105,73 @@ static void add_rnops_for_u_prefix(HellProgram* hp) {
     int code_items = 0;
     int non_rnop_item_exists_before = 0;
     for (HellCodeAtom* code = hb->code; code; code=code->next) {
-      // look for U_ commands refering here
-      for (HellReferencedBy* ref = code->referenced_by; ref; ref=ref->next) {
-        int ref_offset = ref->data->reference->offset;
-        // if (ref_offset < 0) -- hack for 8cc
-        if ((unsigned int)ref_offset >= ((unsigned int)-1)/2) {
-          if (non_rnop_item_exists_before) {
-            error("oops");
-          }
-          int insert_rnops = -(code_items + ref_offset);
-          for (int i = 0; i < insert_rnops; i++) {
-            insert_preceeding_rnop(hb);
-            code_items++;
+      for (LabelList* label = code->labels; label; label = label->next) {
+        if (!label->item) {
+          continue;
+        }
+        // look for U_ commands refering here
+        for (HellReferencedBy* ref = label->item->referenced_by; ref; ref=ref->next) {
+          int ref_offset = ref->data->reference->offset;
+          // if (ref_offset < 0) -- hack for 8cc
+          if ((unsigned int)ref_offset >= ((unsigned int)-1)/2) {
+            if (non_rnop_item_exists_before) {
+              error("oops");
+            }
+            int insert_rnops = -(code_items + ref_offset);
+            for (int i = 0; i < insert_rnops; i++) {
+              insert_preceeding_rnop(hb);
+              code_items++;
+            }
           }
         }
-      }
-      // update non_rnop_item_exists_before and code_items
-      int cnt_cmd = 0;
-      for (XlatCycle* command = code->command; command; command=command->next) {
-        if (command->command != MALBOLGE_COMMAND_NOP) {
+        // update non_rnop_item_exists_before and code_items
+        int cnt_cmd = 0;
+        for (XlatCycle* command = code->command; command; command=command->next) {
+          if (command->command != MALBOLGE_COMMAND_NOP) {
+            non_rnop_item_exists_before = 1;
+          }
+          cnt_cmd++;
+        }
+        if (cnt_cmd < 2) {
           non_rnop_item_exists_before = 1;
         }
-        cnt_cmd++;
+        code_items++;
       }
-      if (cnt_cmd < 2) {
-        non_rnop_item_exists_before = 1;
-      }
-      code_items++;
     }
+  }
+}
+
+static void sort_offsets(HellProgram* hp) {
+  // I think it will be no fun to implement this function
+  error("not implemented yet");
+  if (hp) { // avoid not-used warning/error
+  }
+}
+
+static void assign_memory_cells(HellProgram* hp) {
+  // I think it will be no fun to implement this function
+  error("not implemented yet");
+  if (hp) { // avoid not-used warning/error
+  }
+}
+
+static void convert_to_immediates(HellProgram* hp) {
+  // maybe one subprocedure for data (reference -> immediate) and one for code (replace with data)
+  error("not implemented yet");
+  if (hp) { // avoid not-used warning/error
+  }
+}
+
+static void emit_initialization_code(HellProgram* hp) {
+  // copy weird code from LMFAO here
+  error("not implemented yet");
+  if (hp) { // avoid not-used warning/error
+  }
+}
+
+static void emit_entry_point_code(HellProgram* hp) {
+  // copy weird code from LMFAO here
+  error("not implemented yet");
+  if (hp) { // avoid not-used warning/error
   }
 }
