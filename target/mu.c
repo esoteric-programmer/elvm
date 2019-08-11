@@ -6,6 +6,7 @@ void* malloc(size_t);
 
 // helper functions
 static void decrement_immediate(HellImmediate* imm);
+static int compare_hell_immediate(const HellImmediate* imm1, const HellImmediate* imm2);
 static void insert_preceeding_rnop(HellBlock* hb);
 
 // process HeLL program
@@ -141,18 +142,94 @@ static void add_rnops_for_u_prefix(HellProgram* hp) {
   }
 }
 
+static int compare_hell_immediate(const HellImmediate* imm1, const HellImmediate* imm2) {
+  if (!imm1 && !imm2) {
+    return 0;
+  }
+  if (!imm1) {
+    return 1;
+  }
+  if (!imm2) {
+    return -1;
+  }
+  if (imm1->praefix_1t != imm2->praefix_1t) {
+    return imm1->praefix_1t - imm2->praefix_1t;
+  }
+  const char* s1 = imm1->suffix;
+  while (*s1 == '0' + imm1->praefix_1t) {
+    s1++;
+  }
+  const char* s2 = imm2->suffix;
+  while (*s2 == '0' + imm2->praefix_1t) {
+    s2++;
+  }
+  int s1len = strlen(imm1->suffix);
+  int s2len = strlen(imm2->suffix);
+  if (s1len > s2len) {
+    return *s1 - '0' - imm2->praefix_1t;
+  }else if (s2len > s1len) {
+    return '0' + imm1->praefix_1t - *s2;
+  }else{
+    while (s1 != NULL && s2 != NULL) {
+      if (*s1 != *s2) {
+        return *s1 - *s2;
+      }
+      s1++;
+      s2++;
+    }
+    return 0; // equal
+  }
+}
+
+static void insert_block_sorted(HellProgram* hp, HellBlock* block) {
+  for (HellBlock** it = &hp->blocks; *it; it = &(*it)->next) {
+    int cmp = compare_hell_immediate((*it)->offset, block->offset);
+    if (cmp >= 0) { // TODO: fix 8cc
+      block->next = *it;
+      *it = block;
+      return;
+    }
+  }
+  error("oops");
+}
+
 static void sort_offsets(HellProgram* hp) {
-  // I think it will be no fun to implement this function
-  error("not implemented yet");
-  if (hp) { // avoid not-used warning/error
+  for (HellBlock** it = &hp->blocks; *it; it = &(*it)->next) {
+    if ((*it)->next) {
+      int cmp = compare_hell_immediate((*it)->offset, (*it)->next->offset);
+      if (cmp < 0) { // TODO: fix 8cc
+        HellBlock* cut = *it;
+        (*it) = (*it)->next;
+        insert_block_sorted(hp, cut);
+      }
+    }
   }
 }
 
 static void assign_memory_cells(HellProgram* hp) {
+  HellImmediate* last_offset = NULL;
+  int last_blocksize = 0;
+  for (HellBlock* it = hp->blocks; it; it=it->next) {
+    if (it->offset) {
+      last_offset = it->offset;
+      // TODO: count block size... -> last_blocksize
+      continue;
+    }
+    if (it->code) {
+      // insert one Nop at beginning... to prevent xlat2 crashes
+      // Any valid Malbolge command is sufficient; RNop is not necessary;
+      // however, a function to insert RNop already exists for the U_-prefixes
+      insert_preceeding_rnop(it);
+    }
+    // TODO: assign offset: add last_blocksize to last_offset
+
+    // TODO: update last_offset and last_blocksize
+
+    // prevent not-used warning/error
+    if (last_offset && last_blocksize) { }
+  }
   // I think it will be no fun to implement this function
   error("not implemented yet");
-  if (hp) { // avoid not-used warning/error
-  }
 }
 
 static void convert_to_immediates(HellProgram* hp) {
