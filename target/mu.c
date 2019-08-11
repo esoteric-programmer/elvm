@@ -206,13 +206,64 @@ static void sort_offsets(HellProgram* hp) {
   }
 }
 
+static HellImmediate* compute_next_offset(HellImmediate* last_offset, int last_blocksize) {
+  if (!last_offset) {
+    error("oops");
+  }
+  if (!last_offset->suffix) {
+    error("oops");
+  }
+  HellImmediate* offset = (HellImmediate*)malloc(sizeof(HellImmediate));
+  if (!offset) {
+    error("out of mem");
+  }
+  offset->praefix_1t = last_offset->praefix_1t;
+  int lolen = strlen(last_offset->suffix);
+  int bs_ter_len = 0;
+  for (int tmp = last_blocksize; tmp; tmp=tmp/3) {
+    bs_ter_len++;
+  }
+  int nolen = lolen+bs_ter_len+offset->praefix_1t+1; // upper bound for number of new digits
+  char* new_suffix = (char*)malloc(nolen); // TODO: memory leak: this string must be freed somewhere!
+  offset->suffix = new_suffix;
+  memset(new_suffix,'0'+offset->praefix_1t,nolen-1);
+  memcpy(new_suffix+nolen-1-lolen,last_offset->suffix,lolen+1);
+  // todo: increment by last_blocksize
+  int pos = nolen-2;
+  while (last_blocksize) {
+    int add = last_blocksize % 3;
+    last_blocksize = last_blocksize / 3;
+    add += new_suffix[pos]-'0';
+    new_suffix[pos] = '0'+add%3;
+    last_blocksize += add/3;
+    if (!pos && last_blocksize) {
+      error("oops"); // overflow
+    }
+    pos--;
+  }
+  return offset;
+}
+
 static void assign_memory_cells(HellProgram* hp) {
   HellImmediate* last_offset = NULL;
   int last_blocksize = 0;
   for (HellBlock* it = hp->blocks; it; it=it->next) {
+    // compute current block's size
+    int cnt = 0;
+    if (it->code && !it->data) {
+      for (HellCodeAtom* cit = it->code; cit; cit = cit->next) {
+        cnt++;
+      }
+    }else if (it->data && !it->code) {
+      for (HellDataAtom* dit = it->data; dit; dit = dit->next){
+        cnt++;
+      }
+    }else{
+      error("oops");
+    }
     if (it->offset) {
       last_offset = it->offset;
-      // TODO: count block size... -> last_blocksize
+      last_blocksize = cnt;
       continue;
     }
     if (it->code) {
@@ -220,16 +271,15 @@ static void assign_memory_cells(HellProgram* hp) {
       // Any valid Malbolge command is sufficient; RNop is not necessary;
       // however, a function to insert RNop already exists for the U_-prefixes
       insert_preceeding_rnop(it);
+      cnt++;
     }
-    // TODO: assign offset: add last_blocksize to last_offset
+    // assign offset: add last_blocksize to last_offset
+    it->offset = compute_next_offset(last_offset, last_blocksize);
 
-    // TODO: update last_offset and last_blocksize
-
-    // prevent not-used warning/error
-    if (last_offset && last_blocksize) { }
+    // update last_offset and last_blocksize
+    last_blocksize = cnt;
+    last_offset = it->offset;
   }
-  // I think it will be no fun to implement this function
-  error("not implemented yet");
 }
 
 static void convert_to_immediates(HellProgram* hp) {
