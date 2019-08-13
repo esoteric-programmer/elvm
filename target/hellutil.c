@@ -19,7 +19,6 @@ static HellImmediate* fixed_offset;
 static LabelList* current_labels;
 static LabelList* current_labels_tail;
 
-static int is_malbolge_cmd(unsigned char cmd);
 static void emit_code_atom(XlatCycle* cyc);
 static void emit_data_atom(HellImmediate* hi, HellReference* hr);
 static void emit_hell_block(HellCodeAtom* code, HellDataAtom* data);
@@ -41,7 +40,7 @@ static void emit_offset(int praefix_1t, const char* suffix); // assign fixed off
 static void emit_label(const char* name);
 static char* make_string(const char* format, ...);
 
-static int is_malbolge_cmd(unsigned char cmd) {
+int is_malbolge_cmd(unsigned char cmd) {
   switch (cmd) {
     case MALBOLGE_COMMAND_OPR:
     case MALBOLGE_COMMAND_ROT:

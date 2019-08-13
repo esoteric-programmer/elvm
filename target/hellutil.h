@@ -95,8 +95,12 @@ typedef struct HellProgram {
 	StringList* string_memory;
 } HellProgram;
 
-void make_hell_object(Module* module, HellProgram** hell);
+// helpter functions
+int is_malbolge_cmd(unsigned char cmd);
 LabelTree* find_label(LabelTree* tree, const char* name);
+
+// main functions
+void make_hell_object(Module* module, HellProgram** hell);
 void free_hell_program(HellProgram** hell);
 
 #endif
