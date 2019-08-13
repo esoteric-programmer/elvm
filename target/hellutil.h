@@ -13,11 +13,17 @@
 #define MALBOLGE_COMMAND_NOP 68
 
 struct LabelTree;
+struct HellBlock;
 
 typedef struct LabelList {
 	struct LabelTree* item;
 	struct LabelList* next;
 } LabelList;
+
+typedef struct BlockPosition {
+  struct HellBlock* father;
+  int position;
+} BlockPosition;
 
 // .CODE section
 
@@ -29,6 +35,7 @@ typedef struct XlatCycle {
 typedef struct HellCodeAtom {
 	XlatCycle* command;
 	LabelList* labels;
+	BlockPosition pos;
 	struct HellCodeAtom* next;
 } HellCodeAtom;
 
@@ -48,6 +55,7 @@ typedef struct HellDataAtom {
 	HellImmediate* value;
 	HellReference* reference;
 	LabelList* labels;
+	BlockPosition pos;
 	struct HellDataAtom* next;
 } HellDataAtom;
 

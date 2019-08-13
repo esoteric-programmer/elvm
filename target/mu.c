@@ -8,6 +8,8 @@ void* malloc(size_t);
 static void decrement_immediate(HellImmediate* imm);
 static int compare_hell_immediate(const HellImmediate* imm1, const HellImmediate* imm2);
 static void insert_preceeding_rnop(HellBlock* hb);
+static void insert_block_sorted(HellProgram* hp, HellBlock* block);
+static HellImmediate* compute_offset(HellImmediate* base, int offset);
 
 // process HeLL program
 static void compute_referenced_by(HellProgram* hp); // go through data section, resolve references and add to referenced_by list
@@ -95,6 +97,8 @@ static void insert_preceeding_rnop(HellBlock* hb) {
   cyc->next->next = NULL;
   HellCodeAtom* nop = (HellCodeAtom*)malloc(sizeof(HellCodeAtom));
   nop->command = cyc;
+  nop->pos.father = NULL;
+  nop->pos.position = 0;
   nop->labels = NULL;
   nop->next = hb->code;
   hb->code = nop;
@@ -206,42 +210,42 @@ static void sort_offsets(HellProgram* hp) {
   }
 }
 
-static HellImmediate* compute_next_offset(HellImmediate* last_offset, int last_blocksize) {
-  if (!last_offset) {
+static HellImmediate* compute_offset(HellImmediate* base, int offset) {
+  if (!base) {
     error("oops");
   }
-  if (!last_offset->suffix) {
+  if (!base->suffix) {
     error("oops");
   }
-  HellImmediate* offset = (HellImmediate*)malloc(sizeof(HellImmediate));
-  if (!offset) {
+  HellImmediate* ret = (HellImmediate*)malloc(sizeof(HellImmediate));
+  if (!ret) {
     error("out of mem");
   }
-  offset->praefix_1t = last_offset->praefix_1t;
-  int lolen = strlen(last_offset->suffix);
+  ret->praefix_1t = base->praefix_1t;
+  int lolen = strlen(base->suffix);
   int bs_ter_len = 0;
-  for (int tmp = last_blocksize; tmp; tmp=tmp/3) {
+  for (int tmp = offset; tmp; tmp=tmp/3) {
     bs_ter_len++;
   }
-  int nolen = lolen+bs_ter_len+offset->praefix_1t+1; // upper bound for number of new digits
+  int nolen = lolen+bs_ter_len+ret->praefix_1t+1; // upper bound for number of new digits
   char* new_suffix = (char*)malloc(nolen); // TODO: memory leak: this string must be freed somewhere!
-  offset->suffix = new_suffix;
-  memset(new_suffix,'0'+offset->praefix_1t,nolen-1);
-  memcpy(new_suffix+nolen-1-lolen,last_offset->suffix,lolen+1);
-  // todo: increment by last_blocksize
+  ret->suffix = new_suffix;
+  memset(new_suffix,'0'+ret->praefix_1t,nolen-1);
+  memcpy(new_suffix+nolen-1-lolen,base->suffix,lolen+1);
+  // todo: increment by offset
   int pos = nolen-2;
-  while (last_blocksize) {
-    int add = last_blocksize % 3;
-    last_blocksize = last_blocksize / 3;
+  while (offset) {
+    int add = offset % 3;
+    offset = offset / 3;
     add += new_suffix[pos]-'0';
     new_suffix[pos] = '0'+add%3;
-    last_blocksize += add/3;
-    if (!pos && last_blocksize) {
+    offset += add/3;
+    if (!pos && offset) {
       error("oops"); // overflow
     }
     pos--;
   }
-  return offset;
+  return ret;
 }
 
 static void assign_memory_cells(HellProgram* hp) {
@@ -252,10 +256,14 @@ static void assign_memory_cells(HellProgram* hp) {
     int cnt = 0;
     if (it->code && !it->data) {
       for (HellCodeAtom* cit = it->code; cit; cit = cit->next) {
+        cit->pos.father = it;
+        cit->pos.position = cnt;
         cnt++;
       }
     }else if (it->data && !it->code) {
       for (HellDataAtom* dit = it->data; dit; dit = dit->next){
+        dit->pos.father = it;
+        dit->pos.position = cnt;
         cnt++;
       }
     }else{
@@ -271,10 +279,12 @@ static void assign_memory_cells(HellProgram* hp) {
       // Any valid Malbolge command is sufficient; RNop is not necessary;
       // however, a function to insert RNop already exists for the U_-prefixes
       insert_preceeding_rnop(it);
-      cnt++;
+      // reserve enough space for the rnop that has just been added
+      // and to move the code block according to xlat2 position constraints later
+      cnt += 94;
     }
     // assign offset: add last_blocksize to last_offset
-    it->offset = compute_next_offset(last_offset, last_blocksize);
+    it->offset = compute_offset(last_offset, last_blocksize);
 
     // update last_offset and last_blocksize
     last_blocksize = cnt;

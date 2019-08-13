@@ -124,6 +124,8 @@ static void emit_code_atom(XlatCycle* cyc) {
     error("out of mem");
   }
   atom->command = cyc;
+  atom->pos.father = NULL;
+  atom->pos.position = 0;
   atom->next = NULL;
   LabelList* it = current_labels;
   while (it) {
@@ -185,6 +187,8 @@ static void emit_data_atom(HellImmediate* hi, HellReference* hr) {
   }
   atom->value = hi;
   atom->reference = hr;
+  atom->pos.father = NULL;
+  atom->pos.position = 0;
   atom->next = NULL;
   LabelList* it = current_labels;
   while (it) {
