@@ -2,6 +2,10 @@
 #include <target/util.h>
 #include <target/hellutil.h>
 
+
+// FIXME: sorting offsets does not work correctly!!
+// FIXME: computing offsets for XlatCycles resp. moving them to the right offset seems to fail completely!!
+
 void* malloc(size_t);
 void free(void*);
 
@@ -278,6 +282,9 @@ static HellImmediate* compute_offset(HellImmediate* base, int offset) {
     }
     pos--;
   }
+  while (*ret->suffix == '0'+ret->praefix_1t) {
+    ret->suffix++;
+  }
   return ret;
 }
 
@@ -489,16 +496,79 @@ static void convert_to_immediates(HellProgram* hp) {
   }
 }
 
-static void emit_initialization_code(HellProgram* hp) {
-  // copy weird code from LMFAO here
-  error("not implemented yet");
-  if (hp) { // avoid not-used warning/error
+
+
+static void print_offset_and_label(HellImmediate* offset) {
+  if (!offset) {
+    error("oops");
   }
+  if (!offset->suffix) {
+    error("oops");
+  }
+  printf("@%ct",offset->praefix_1t+'0');
+  if (offset->suffix[0]) {
+    printf("%s",offset->suffix);
+  }else{
+    printf("%c",offset->praefix_1t+'0');
+  }
+  printf("\n");
+  printf("l%ct",offset->praefix_1t+'0');
+  if (offset->suffix[0]) {
+    printf("%s",offset->suffix);
+  }else{
+    printf("%c",offset->praefix_1t+'0');
+  }
+  printf(":\n");
+}
+
+static int is_entrypoint(LabelList* labels) {
+  LabelList* it = labels;
+  while (it) {
+    if (it->item) {
+      if (it->item->label) {
+        if (strcmp(it->item->label,"ENTRY")==0) {
+          return 1;
+        }
+      }
+    }
+    it = it->next;
+  }
+  return 0;
+}
+
+static void emit_initialization_code(HellProgram* hp) {
+  if (!hp) {
+    error("oops");
+  }
+  printf(".DATA\n");
+  for (HellBlock* hb = hp->blocks; hb; hb=hb->next) {
+    if (hb->code) {
+      error("oops");
+    }
+    if (!hb->data) {
+      error("oops");
+    }
+    print_offset_and_label(hb->offset);
+    for (HellDataAtom* data = hb->data; data; data=data->next) {
+      if (is_entrypoint(data->labels)) {
+        printf("ENTRY:\n");
+      }
+      if (!data->value) {
+        printf("  0t0\n"); // standard value for unassiged cell
+      }else if (data->value->suffix[0]) {
+        printf("  %ct%s\n", data->value->praefix_1t+'0',data->value->suffix);
+      }else{
+        printf("  %ct%c\n", data->value->praefix_1t+'0',data->value->praefix_1t+'0');
+      }
+    }
+    printf("\n");
+  }
+  // TODO: copy weird code from LMFAO here; dont print out hell program, but malbolge program
 }
 
 static void emit_entry_point_code(HellProgram* hp) {
   // copy weird code from LMFAO here
-  error("not implemented yet");
+  // error("not implemented yet");
   if (hp) { // avoid not-used warning/error
   }
 }
