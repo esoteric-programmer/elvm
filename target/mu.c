@@ -2,8 +2,6 @@
 #include <target/util.h>
 #include <target/hellutil.h>
 
-
-// FIXME: sorting offsets does not work correctly!!
 // FIXME: computing offsets for XlatCycles resp. moving them to the right offset seems to fail completely!!
 
 void* malloc(size_t);
@@ -189,8 +187,8 @@ static int compare_hell_immediate(const HellImmediate* imm1, const HellImmediate
   while (*s2 == '0' + imm2->praefix_1t) {
     s2++;
   }
-  int s1len = strlen(imm1->suffix);
-  int s2len = strlen(imm2->suffix);
+  int s1len = strlen(s1);
+  int s2len = strlen(s2);
   if (s1len > s2len) {
     return *s1 - '0' - imm2->praefix_1t;
   }else if (s2len > s1len) {
@@ -220,15 +218,19 @@ static void insert_block_sorted(HellProgram* hp, HellBlock* block) {
 }
 
 static void sort_offsets(HellProgram* hp) {
-  for (HellBlock** it = &hp->blocks; *it; it = &(*it)->next) {
-    if ((*it)->next) {
-      int cmp = compare_hell_immediate((*it)->offset, (*it)->next->offset);
-      if (cmp < 0) { // TODO: fix 8cc
-        HellBlock* cut = *it;
-        (*it) = (*it)->next;
-        insert_block_sorted(hp, cut);
-      }
+  HellBlock* it = hp->blocks;
+  if (!it) {
+    return;
+  }
+  while (it->next) {
+    int cmp = compare_hell_immediate(it->offset, it->next->offset);
+    if (cmp > 0) { // TODO: fix 8cc
+      HellBlock* cut = it->next;
+      it->next = it->next->next;
+      insert_block_sorted(hp, cut);
+      continue;
     }
+    it = it->next;
   }
 }
 
