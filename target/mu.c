@@ -307,28 +307,56 @@ static int immediate_mod_94(HellImmediate* imm) {
 }
 
 static char code_value(XlatCycle* cyc, int offset) {
+  if (!cyc) {
+    return 0;
+  }
   for (char code = 33; code < 127; code++) {
+//    printf("// trying '%c' at offset %u\n",code,offset);
     // test whether this code matches the XlatCycle *cyc
+    if (!cyc->next) {
+//      printf("// non-resistant command");
+      // handle non-resistant command
+      unsigned char normalized = (unsigned char)((code+offset)%94);
+//      printf("normalized: %u // %u; NOP is %u; is_malbolge_cmd(normalized) = %u\n",
+//          normalized,cyc->command,MALBOLGE_COMMAND_NOP,is_malbolge_cmd(normalized));
+      if (normalized != cyc->command && (cyc->command != MALBOLGE_COMMAND_NOP || is_malbolge_cmd(normalized))) {
+//        printf("no match\n");
+        continue;
+      }
+//      printf("match: '%c' at offset %u\n",code,offset);
+      return code;
+    }
+    // handle xlat cycle
     int match = 1;
     char cur_code = code;
-    for (XlatCycle* cur_cyc = cyc; cur_cyc; cur_cyc = cur_cyc->next) {
+    for (XlatCycle* cur_cyc = cyc; cur_cyc || cur_code != code; cur_cyc = cur_cyc->next) {
+//      printf("// testing xlat cycle, cur_code: '%c'\n",cur_code);
+      if (!cur_cyc) {
+        cur_cyc = cyc;
+      }
       // test match!
       unsigned char normalized = (unsigned char)((cur_code+offset)%94);
+//      printf("normalized: %u // %u; NOP is %u; is_malbolge_cmd(normalized) = %u\n",
+//          normalized,cur_cyc->command,MALBOLGE_COMMAND_NOP,is_malbolge_cmd(normalized));
       if (normalized != cur_cyc->command && (cur_cyc->command != MALBOLGE_COMMAND_NOP || is_malbolge_cmd(normalized))) {
+//        printf("no match\n");
         match = 0;
         break;
       }
       cur_code = xlat2[cur_code-33];
     }
     if (match) {
+//      printf("match: '%c' at offset %u\n",code,offset);
       return code;
     }
   }
+//  printf("no match at offset %u\n",offset);
   return 0; // error: no matching code value found
 }
 
 static int compute_additional_code_offset(HellCodeAtom* code, HellImmediate* base_offset, int offset) {
   int start_offset = (immediate_mod_94(base_offset) + offset)%94;
+//  printf("trying to match, start at %u\n",start_offset);
   for (int i=0; i<94; i++) {
     int current_offset = (start_offset+i) % 94;
     int match = 1;
@@ -337,11 +365,14 @@ static int compute_additional_code_offset(HellCodeAtom* code, HellImmediate* bas
         match = 0;
         break;
       }
+      current_offset = (current_offset+1)%94;
     }
     if (match) {
+//      printf("trying to match, success at %u\n",(start_offset+i) % 94);
       return i;
     }
   }
+//  printf("no success\n");
   return -1;
 }
 
@@ -381,6 +412,7 @@ static void assign_memory_cells(HellProgram* hp) {
       cnt++;
       // move the code block according to xlat2 position constraints
       additional_offset = compute_additional_code_offset(it->code,last_offset,last_blocksize);
+//      printf("// additional offset: %u\n",additional_offset);
     }
     // assign offset: add last_blocksize to last_offset
     it->offset = compute_offset(last_offset, last_blocksize + additional_offset);
