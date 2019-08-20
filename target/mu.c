@@ -383,6 +383,10 @@ static void assign_memory_cells(HellProgram* hp) {
     // compute current block's size
     int cnt = 0;
     if (it->code && !it->data) {
+      // insert one Nop at beginning... to prevent xlat2 crashes
+      // Any valid Malbolge command is sufficient; RNop is not necessary;
+      // however, a function to insert RNop already exists for the U_-prefixes
+      insert_preceeding_rnop(it);
       for (HellCodeAtom* cit = it->code; cit; cit = cit->next) {
         cit->pos.father = it;
         cit->pos.position = cnt;
@@ -404,12 +408,6 @@ static void assign_memory_cells(HellProgram* hp) {
     }
     int additional_offset = 0;
     if (it->code) {
-      // insert one Nop at beginning... to prevent xlat2 crashes
-      // Any valid Malbolge command is sufficient; RNop is not necessary;
-      // however, a function to insert RNop already exists for the U_-prefixes
-      insert_preceeding_rnop(it);
-      // reserve enough space for the rnop that has just been added
-      cnt++;
       // move the code block according to xlat2 position constraints
       additional_offset = compute_additional_code_offset(it->code,last_offset,last_blocksize);
 //      printf("// additional offset: %u\n",additional_offset);
@@ -529,8 +527,6 @@ static void convert_to_immediates(HellProgram* hp) {
     }
   }
 }
-
-
 
 static void print_offset_and_label(HellImmediate* offset) {
   if (!offset) {
