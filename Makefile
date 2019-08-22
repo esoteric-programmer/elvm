@@ -112,6 +112,7 @@ ELC_SRCS := \
 	js.c \
 	lua.c \
 	ll.c \
+	mu.c \
 	oct.c \
 	php.c \
 	piet.c \
@@ -455,6 +456,18 @@ TEST_FILTER += out/bm_mov.eir.hell out/24_mem.eir.hell out/24_cmp2.c.eir.hell ou
 endif
 include target.mk
 $(OUT.eir.hell.out): tools/runhell.sh
+endif
+
+ifdef MU
+TARGET := mu
+RUNNER := Unshackled
+# these tests require an insane amount of RAM and computation time
+TEST_FILTER := out/fizzbuzz.c.eir.mu out/qsort.c.eir.mu out/fizzbuzz_fast.c.eir.mu out/lisp.c.eir.mu out/8cc.c.eir.mu out/elc.c.eir.mu out/dump_ir.c.eir.mu out/eli.c.eir.mu
+# these tests require a very huge amount of RAM and computation time
+ifndef FULL
+TEST_FILTER += out/bm_mov.eir.mu out/24_mem.eir.mu out/24_cmp2.c.eir.mu out/24_cmp.c.eir.mu out/24_muldiv.c.eir.mu out/array.c.eir.mu out/bitops.c.eir.mu out/bool.c.eir.mu out/cmp_eq.c.eir.mu out/cmp_ge.c.eir.mu out/cmp_gt.c.eir.mu out/cmp_le.c.eir.mu out/cmp_lt.c.eir.mu out/cmp_ne.c.eir.mu out/copy_struct.c.eir.mu out/eof.c.eir.mu out/field_addr.c.eir.mu out/func2.c.eir.mu out/func.c.eir.mu out/func_ptr.c.eir.mu out/global_array.c.eir.mu out/global.c.eir.mu out/global_struct_ref.c.eir.mu out/hello.c.eir.mu out/increment.c.eir.mu out/logic_val.c.eir.mu out/loop.c.eir.mu out/malloc.c.eir.mu out/muldiv.c.eir.mu out/nullptr.c.eir.mu out/printf.c.eir.mu out/print_int.c.eir.mu out/puts.c.eir.mu out/struct.c.eir.mu out/swapcase.c.eir.mu out/switch_case.c.eir.mu out/switch_op.c.eir.mu out/switch_range.c.eir.mu
+endif
+include target.mk
 endif
 
 TARGET := sqlite3

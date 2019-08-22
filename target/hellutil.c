@@ -19,7 +19,6 @@ static HellImmediate* fixed_offset;
 static LabelList* current_labels;
 static LabelList* current_labels_tail;
 
-static int is_malbolge_cmd(unsigned char cmd);
 static void emit_code_atom(XlatCycle* cyc);
 static void emit_data_atom(HellImmediate* hi, HellReference* hr);
 static void emit_hell_block(HellCodeAtom* code, HellDataAtom* data);
@@ -41,7 +40,7 @@ static void emit_offset(int praefix_1t, const char* suffix); // assign fixed off
 static void emit_label(const char* name);
 static char* make_string(const char* format, ...);
 
-static int is_malbolge_cmd(unsigned char cmd) {
+int is_malbolge_cmd(unsigned char cmd) {
   switch (cmd) {
     case MALBOLGE_COMMAND_OPR:
     case MALBOLGE_COMMAND_ROT:
@@ -124,6 +123,8 @@ static void emit_code_atom(XlatCycle* cyc) {
     error("out of mem");
   }
   atom->command = cyc;
+  atom->pos.father = NULL;
+  atom->pos.position = 0;
   atom->next = NULL;
   LabelList* it = current_labels;
   while (it) {
@@ -185,6 +186,8 @@ static void emit_data_atom(HellImmediate* hi, HellReference* hr) {
   }
   atom->value = hi;
   atom->reference = hr;
+  atom->pos.father = NULL;
+  atom->pos.position = 0;
   atom->next = NULL;
   LabelList* it = current_labels;
   while (it) {
@@ -305,16 +308,16 @@ static void emit_label(const char* name) {
         error("oops");
       }
       int cmp = strncmp(name,it->label,101);
-      // else if (cmp > 0) -- hack for 8cc
-      if (cmp > 0 && (unsigned int)cmp < ((unsigned int)-1)/2){
+      if (cmp > 0) {
+      // if (cmp > 0 && (unsigned int)cmp < ((unsigned int)-1)/2) { // -- hack for 8cc
         if (it->left) {
           it = it->left;
         }else{
           it->left = label;
           break;
         }
-      // else if (cmp < 0) -- hack for 8cc
-      }else if ((unsigned int)cmp >= ((unsigned int)-1)/2){
+      }else if (cmp < 0) {
+      // }else if ((unsigned int)cmp >= ((unsigned int)-1)/2){ // -- hack for 8cc
         if (it->right) {
           it = it->right;
         }else{
@@ -493,11 +496,11 @@ LabelTree* find_label(LabelTree* tree, const char* name) {
     return NULL;
   }
   int cmp = strncmp(name,tree->label,101);
-  // if (cmp > 0) -- hack for 8cc
-  if (cmp > 0 && (unsigned int)cmp < ((unsigned int)-1)/2){
+  if (cmp > 0) {
+  // if (cmp > 0 && (unsigned int)cmp < ((unsigned int)-1)/2){ // -- hack for 8cc
     return find_label(tree->left, name);
-  // if (cmp < 0) -- hack for 8cc
-  }else if ((unsigned int)cmp >= ((unsigned int)-1)/2){
+  }else if (cmp < 0) {
+  // }else if ((unsigned int)cmp >= ((unsigned int)-1)/2){ // -- hack for 8cc
     return find_label(tree->right, name);
   }else{
     return tree;
