@@ -30,11 +30,11 @@ Currently, there are 38 backends:
 * F# (by [@masaedw](https://github.com/masaedw/))
 * Forth (by [@dubek](https://github.com/dubek/))
 * Go (by [@shogo82148](https://github.com/shogo82148/))
-* HeLL (by [@esoteric-programmer](https://github.com/esoteric-programmer/))
 * Java
 * JavaScript
 * LLVM IR (by [@retrage](https://github.com/retrage/))
 * Lua (by [@retrage](https://github.com/retrage/))
+* Malbolge Unshackled (by [@esoteric-programmer](https://github.com/esoteric-programmer/))
 * Octave (by [@inaniwa3](https://github.com/inaniwa3/))
 * Perl5 (by [@mackee](https://github.com/mackee/))
 * PHP (by [@zonuexe](https://github.com/zonuexe/))
@@ -247,17 +247,6 @@ is more portable than [sedlisp](https://github.com/shinh/sedlisp),
 though much slower. Also note, due to limitation of BSD sed, programs
 cannot output non-ASCII characters and NUL.
 
-### HeLL
-
-This backend was contributed by [@esoteric-programmer](https://github.com/esoteric-programmer/).
-HeLL is an assembly language for Malbolge and Malbolge Unshackled.
-Use [LMFAO](https://github.com/esoteric-programmer/LMFAO) to build the Malbolge Unshackled program from HeLL.
-This backend won't be tested by default because Malbolge Unshackled is extremely slow. Use
-
-    $ HELL=1 make hell
-
-to run them. Note you may need to adjust tools/runhell.sh. See also the section about Malbolge Unshackled.
-
 ### Malbolge Unshackled
 
 This backend was contributed by [@esoteric-programmer](https://github.com/esoteric-programmer/).
@@ -275,6 +264,7 @@ The backend reverts/converts newlines from input to Linux encoding and
 applies modulo 256 operations to all input and output,
 but it cannot compensate the issues this way.
 You should limit I/O to ASCII characters in order to avoid unexpected behaviour or crashes.
+Self-build does not work at the moment because of huge memory consumption.
 
 ### TensorFlow
 
